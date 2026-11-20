@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de gestión de cubículos · Infoteca Campus Arteaga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<script src="libs/qrcode.min.js"></script>
+<script src="libs/jsQR.js"></script>
+<style>
+:root{--bg:#ffffff;color-scheme:light;--head:#14284b;--zebra:#eef1f6;--surface:#fff;--ink:#14213d;--muted:#5b667a;--line:#d9dee8;--brand:#14284b;--ok:#0f7b5f;--ok-bg:#e3f3ee;--busy:#b4442f;--busy-bg:#fbe9e5;--sel:#c9a227;--sel-bg:#fbf3d6;--r:10px;--serif:"Source Serif 4",Georgia,serif;--sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+header{background:var(--brand);color:#fff}
+.bar{max-width:1100px;margin:auto;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-weight:700;font-size:18px;margin-right:auto}
+.brand small{display:block;font:400 12px var(--sans);opacity:.75}
+nav{display:flex;gap:4px}
+nav button{background:none;border:0;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;opacity:.8}
+nav button[aria-current=true]{background:rgba(255,255,255,.16);opacity:1;font-weight:600}
+main{max-width:1100px;margin:auto;padding:28px 20px 60px}
+h1{font:700 30px/1.2 var(--serif);margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.grid{display:grid;grid-template-columns:1.15fr 1fr;gap:20px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);flex:1;min-width:120px}
+input,select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);width:100%}
+.summary{font-weight:600;margin:6px 0 14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.cub{border:1px solid var(--line);border-radius:var(--r);padding:12px;text-align:left;background:var(--surface);cursor:pointer;display:flex;flex-direction:column;gap:2px}
+.cub b{font-size:17px}.cub span{font-size:12px;color:var(--muted)}
+.cub .st{font-weight:600;color:var(--ok)}
+.cub.busy{background:var(--busy-bg);cursor:not-allowed}.cub.busy .st{color:var(--busy)}
+.cub.sel{border:2px solid var(--sel);background:var(--sel-bg)}
+.btn{border:0;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;background:var(--brand);color:#fff}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:none;color:var(--busy);border:1px solid var(--busy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.plan{display:grid;grid-template-columns:1fr 28px 1fr;gap:8px;padding:14px;border:1px dashed var(--line);border-radius:var(--r)}
+.zone{display:grid;gap:8px}.zone h3{margin:0;font-size:13px;color:var(--muted);font-weight:500}
+.aisle{background:repeating-linear-gradient(0deg,var(--line) 0 6px,transparent 6px 12px);border-radius:4px;opacity:.6}
+.room{padding:14px 6px;border-radius:8px;border:1.5px solid var(--ok);background:var(--ok-bg);color:var(--ok);font-weight:600;cursor:pointer;text-align:center}
+.room.busy{border-color:var(--busy);background:var(--busy-bg);color:var(--busy);cursor:not-allowed}
+.room.sel{border-color:var(--sel);background:var(--sel);color:#14213d}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:12px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.entrance{text-align:center;font-size:12px;color:var(--muted);margin-top:10px;border-top:2px solid var(--ink);padding-top:6px}
+.reserve-bar{margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:13px}
+.list{display:grid;gap:12px}
+.res{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.res .info{flex:1;min-width:200px}.res b{font-size:17px}
+.tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--ok-bg);color:var(--ok)}
+.tag.x{background:var(--busy-bg);color:var(--busy)}.tag.u{background:var(--sel-bg);color:var(--sel)}
+.code{font:600 15px ui-monospace,Consolas,monospace;letter-spacing:.06em}
+dialog{border:0;border-radius:14px;padding:0;max-width:440px;width:92%;background:var(--surface);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,16,27,.6)}
+.dlg{padding:24px;display:grid;gap:14px}.dlg h2{font:700 22px var(--serif);margin:0}
+.qrbox{display:grid;place-items:center;padding:16px;background:#fff;border-radius:12px;border:1px solid var(--line)}
+.err{color:var(--busy);font-size:13px;min-height:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.result{border-radius:var(--r);padding:16px;margin-top:14px;border:1px solid var(--line)}
+.result.good{background:var(--ok-bg)}.result.bad{background:var(--busy-bg)}
+dl{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:10px 0 0}dt{color:var(--muted)}dd{margin:0}
+.scan{position:relative;width:min(100%,320px);aspect-ratio:3/4;margin:14px auto 0;border-radius:16px;overflow:hidden;background:#000}
+.scan video{width:100%;height:100%;object-fit:cover;display:block}
+.scan .marco{position:absolute;inset:21% 10%;border:3px solid var(--sel);border-radius:14px;box-shadow:0 0 0 999px rgba(0,0,0,.5)}
+.scan .linea{position:absolute;left:10%;right:10%;top:21%;height:2px;background:var(--sel);animation:barrido 1.8s ease-in-out infinite alternate}
+@keyframes barrido{to{top:79%}}
+#scanMsg{text-align:center;margin:8px 0 0}
+.empty{text-align:center;color:var(--muted);padding:30px}
+#toasts{position:fixed;right:16px;bottom:16px;display:grid;gap:12px;z-index:50;width:min(360px,calc(100% - 32px))}
+.wa{background:#dcf8c6;color:#111;border-radius:12px 12px 12px 2px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:pop .25s ease-out}
+.wa .who{font-weight:600;color:#075e54;font-size:13px;margin-bottom:4px}.wa .time{font-size:11px;color:#667;text-align:right}
+.wa .row{margin-top:10px}.wa .btn{background:#075e54;color:#fff;padding:8px 12px}.wa .btn.alt{background:#fff;color:#075e54;border:0}
+@keyframes pop{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:500}
+h1,.panel>h3,.dlg h2{color:var(--head)}
+th{background:var(--brand);color:#fff;font-weight:600}
+tbody tr:nth-child(even){background:var(--zebra)}
+.conn{font-size:12px;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.16)}
+.logo{height:46px;width:auto;background:#fff;border-radius:10px;padding:4px 8px}
+.foto{width:100%;height:84px;object-fit:cover;border-radius:6px;margin-bottom:6px;background:var(--line)}
+.cub.busy .foto{filter:grayscale(.7);opacity:.7}
+header{border-bottom:3px solid var(--sel)}
+.brand small{color:var(--sel);opacity:1}
+nav button[aria-current=true]{background:var(--sel);color:#14284b;opacity:1}
+th{border-bottom:2px solid var(--sel)}
+.salamap{margin-top:8px}.salamap .room{width:100%}
+.panel{box-shadow:0 1px 4px rgba(20,40,75,.10)}
+.cub{transition:transform .12s,box-shadow .12s}.cub:not(.busy):hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(20,40,75,.15)}
+.cub .st{align-self:flex-start;margin-top:4px;padding:2px 10px;border-radius:99px;background:var(--ok);color:#fff;font-size:12px}
+.cub.busy .st{background:var(--busy);color:#fff}
+.cub.sel{border:3px solid var(--sel);background:var(--sel-bg);box-shadow:0 0 0 3px rgba(201,162,39,.30)}
+.cub.sel .st{background:var(--sel);color:#14284b}
+.room{background:#e3f3ee;border:2px solid var(--ok);color:#0b5b43;font-weight:700;transition:transform .12s,box-shadow .12s}
+.room:not(.busy):hover{transform:scale(1.03);box-shadow:0 4px 12px rgba(20,40,75,.18)}
+.room.busy{background:var(--busy);border-color:var(--busy);color:#fff}
+.room.sel{background:var(--sel);border-color:#14284b;color:#14284b;box-shadow:0 0 0 4px rgba(201,162,39,.35)}
+.room.sel::before{content:"✓ "}
+.espera{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.esp-head{display:flex;justify-content:space-between;align-items:center;font:600 16px var(--serif);color:var(--head)}
+.esp-list{list-style:none;padding:0;margin:10px 0;display:grid;gap:8px}
+.esp-list li{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.esp-list li .info{flex:1;min-width:140px}
+.pos{background:var(--brand);color:#fff;border-radius:99px;text-align:center;padding:3px 10px;font-weight:600;font-size:13px;white-space:nowrap}
+.esp-list .btn{padding:6px 10px;font-size:13px}
+.cub.busy{cursor:pointer}.room.busy{cursor:pointer}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <img class="logo" id="logoImg" alt="Logo UAdeC">
+  <div class="brand">Infoteca · Campus Arteaga<small>Universidad Autónoma de Coahuila</small></div>
+  <span class="conn" id="conn">Modo local</span>
+  <nav aria-label="Secciones">
+    <button data-v="reservar" aria-current="true">Reservar</button>
+    <button data-v="mias">Mis reservas</button>
+    <button data-v="personal">Personal</button>
+  </nav>
+</div></header>
+
+<main>
+<!-- RESERVAR -->
+<section id="v-reservar">
+  <h1>Sistema de gestión de cubículos</h1>
+  <p class="sub">Consulta disponibilidad, elige tu cubículo en el mapa y recibe tu código QR de acceso.</p>
+  <div class="grid">
+    <div class="panel">
+      <div class="filters">
+        <label>Fecha<input type="date" id="fecha"></label>
+        <label>Hora de inicio<select id="inicio"></select></label>
+        <label>Duración<select id="dur"><option value="1">1 hora</option><option value="2">2 horas (máximo)</option></select></label>
+      </div>
+      <div class="summary" id="resumen"></div>
+      <p class="hint" style="margin:-8px 0 12px">Si un espacio está ocupado, tócalo para anotarte en la lista de espera.</p>
+      <div class="cards" id="cards"></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin:0 0 12px;font:600 16px var(--serif)">Mapa de cubículos · Planta baja</h3>
+      <div class="plan">
+        <div class="zone" id="zA"><h3>Zona A</h3></div>
+        <div class="aisle" aria-hidden="true"></div>
+        <div class="zone" id="zB"><h3>Zona B</h3></div>
+      </div>
+      <div id="zS" class="salamap"></div>
+      <div class="entrance">Entrada principal</div>
+      <div class="legend"><span><i style="background:var(--ok)"></i>Disponible</span><span><i style="background:var(--busy)"></i>Ocupado</span><span><i style="background:var(--sel)"></i>Seleccionado</span></div>
+      <div class="reserve-bar">
+        <button class="btn" id="btnReservar" disabled>Reservar cubículo</button>
+        <span class="hint" id="selTxt">Elige un cubículo disponible.</span>
+      </div>
+      <div id="espera" class="espera"></div>
+    </div>
+  </div>
+</section>
+
+<!-- MIS RESERVAS -->
+<section id="v-mias" hidden>
+  <h1>Mis reservas</h1>
+  <p class="sub">Reservas registradas en este navegador. Muestra el QR al personal de Infoteca al llegar.</p>
+  <div class="row" style="margin-bottom:14px">
+    <button class="btn alt" id="btnHist">Historial</button>
+    <button class="btn danger" id="btnBorrar">Borrar todas las reservas</button>
+  </div>
+  <div class="list" id="listaMias"></div>
+  <div class="panel" id="historial" hidden style="margin-top:20px;overflow-x:auto"></div>
+</section>
+
+<!-- PERSONAL -->
+<section id="v-personal" hidden>
+  <h1>Panel del personal</h1>
+  <p class="sub">Valida el QR del alumno y registra su entrada y salida.</p>
+  <div class="panel" id="gate" style="max-width:420px">
+    <label>PIN de acceso<input type="password" id="pin" autocomplete="off"></label>
+    <div class="err" id="pinErr"></div>
+    <button class="btn" id="btnPin">Entrar</button>
+  </div>
+  <div id="staff" hidden>
+    <div class="panel">
+      <label>Código de reserva o contenido del QR<input id="codeIn" placeholder="Ej. K7F2-9QXM" autocomplete="off"></label>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="btnVal">Validar</button>
+        <button class="btn alt" id="btnCam">Escanear con cámara</button>
+        <button class="btn alt" id="btnFoto">Subir foto del QR</button><input type="file" id="fileQr" accept="image/*" hidden>
+        <button class="btn alt" id="btnLogout">Cerrar sesión</button>
+      </div>
+      <div class="scan" id="scan" hidden><video id="cam" playsinline muted></video><div class="marco"></div><div class="linea"></div></div>
+      <p class="hint" id="scanMsg"></p>
+      <div id="out"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<dialog id="dlgForm"><form method="dialog" class="dlg" id="formRes" novalidate>
+  <h2>Confirmar reservación</h2>
+  <p class="hint" id="formResumen" style="margin:0"></p>
+  <label>Nombre completo<input id="nombre" name="name" autocomplete="off" list="dlNombres"></label>
+  <label>Correo institucional<input id="correo" name="email" type="email" placeholder="usuario@uadec.edu.mx" autocomplete="off" list="dlCorreos"></label>
+  <div id="campoSala" hidden style="display:grid;gap:10px">
+    <label>Número de personas<input id="personas" type="number" min="1" value="1"></label>
+    <div class="hint" id="libresTxt"></div>
+    <label style="flex-direction:row;align-items:center;gap:8px;color:var(--ink)"><input type="checkbox" id="exclusiva" style="width:auto"> Uso exclusivo (que nadie más entre a la sala en ese horario)</label>
+  </div>
+  <div class="err" id="formErr"></div>
+  <div class="row"><button type="submit" class="btn" id="btnOk">Confirmar</button><button type="button" class="btn alt" id="btnNo">Cancelar</button></div>
+</form></dialog>
+
+<dialog id="dlgQr"><div class="dlg">
+  <h2>Reservación registrada</h2>
+  <p class="hint" id="qrInfo" style="margin:0"></p>
+  <div class="qrbox"><div id="qrcode"></div></div>
+  <div style="text-align:center">Código de reserva<br><span class="code" id="qrCode"></span></div>
+  <div class="row"><button class="btn" id="btnDl">Descargar QR</button><button class="btn alt" id="btnCerrar">Cerrar</button></div>
+</div></dialog>
+
+<dialog id="dlgAsist"><div class="dlg" style="text-align:center">
+  <div style="font-size:54px;line-height:1;color:var(--ok)" aria-hidden="true">✓</div>
+  <h2>Asistencia confirmada</h2>
+  <div><b id="asNombre" style="font-size:20px"></b><br><span class="hint" id="asDetalle"></span></div>
+  <div>Hora de entrada: <b id="asHora"></b></div>
+  <button class="btn" id="btnAsOk">Aceptar</button>
+</div></dialog>
+<dialog id="dlgEspera"><form method="dialog" class="dlg" novalidate>
+  <h2>Lista de espera</h2>
+  <p class="hint" id="esperaRes" style="margin:0"></p>
+  <label>Espacio lleno<select id="espCub"></select></label>
+  <label>Nombre completo<input id="espNombre" autocomplete="off" list="dlNombres"></label>
+  <label>Correo institucional<input id="espCorreo" type="email" placeholder="usuario@uadec.edu.mx" autocomplete="off" list="dlCorreos"></label>
+  <label id="espPersWrap" hidden>Número de personas<input id="espPers" type="number" min="1" value="1"></label>
+  <div class="err" id="espErr"></div>
+  <div class="row"><button type="button" class="btn" id="espOk">Anotarme</button><button type="button" class="btn alt" id="espNo">Cancelar</button></div>
+</form></dialog>
+<datalist id="dlNombres"></datalist><datalist id="dlCorreos"></datalist>
+<div id="toasts" aria-live="polite"></div>
+<script>
+"use strict";
+/* ===== Configuración ===== */
+const CUBICULOS = ["A-01","A-02","A-03","A-04","A-05","B-01","B-02","B-03","B-04","B-05","S-01"];
+const CAP = {"S-01":10};   // capacidad de los espacios con varios lugares (sala de silencio)
+const HORA_ABRE = 9, HORA_CIERRA = 20, DUR_MAX = 2;
+const DOMINIOS = ["uadec.edu.mx"];          // dominios de correo aceptados
+const PIN_PERSONAL = "infoteca2026";         // PIN de demostración (ver nota de seguridad en el README)
+const KEY = "infoteca.reservas.v1";
+
+/* ===== Almacenamiento local (sin base de datos) ===== */
+const API = location.port === "3000" ? "/api" : "http://localhost:3000/api";
+let cache = (() => { try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; } })(), online = false;
+const db = {
+  all(){ return JSON.parse(JSON.stringify(cache)); },
+  save(list){
+    const prev = new Map(cache.map(r => [r.codigo, JSON.stringify(r)]));
+    cache = list;
+    try{ localStorage.setItem(KEY, JSON.stringify(list)); }catch(e){}
+    if(!online) return;
+    if(!list.length){ fetch(API+"/reservas", {method:"DELETE"}).catch(()=>{}); return; }
+    list.forEach(r => {
+      if(prev.get(r.codigo) === JSON.stringify(r)) return;
+      fetch(API+"/reservas/"+encodeURIComponent(r.codigo), {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(r)})
+        .then(res => { if(res.status===409){ alert("Ese cubículo acaba de ser reservado por otra persona. Elige otro, por favor."); return sync(); } })
+        .catch(()=>{});
+    });
+  }
+};
+const KEY_E = "infoteca.espera.v1";
+let cacheE = (() => { try{ return JSON.parse(localStorage.getItem(KEY_E)) || []; }catch(e){ return []; } })();
+const dbE = {
+  all(){ return JSON.parse(JSON.stringify(cacheE)); },
+  save(list){
+    const prev = new Map(cacheE.map(r => [r.codigo, JSON.stringify(r)]));
+    cacheE = list;
+    try{ localStorage.setItem(KEY_E, JSON.stringify(list)); }catch(e){}
+    if(!online) return;
+    if(!list.length){ fetch(API+"/espera", {method:"DELETE"}).catch(()=>{}); return; }
+    list.forEach(r => { if(prev.get(r.codigo) !== JSON.stringify(r)) fetch(API+"/espera/"+encodeURIComponent(r.codigo), {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(r)}).catch(()=>{}); });
+  }
+};
+async function sync(){
+  try{
+    const res = await fetch(API+"/reservas"); if(!res.ok) throw 0;
+    cache = await res.json(); online = true;
+    try{ localStorage.setItem(KEY, JSON.stringify(cache)); }catch(e){}
+  }catch(e){ online = false; }
+  if(online){ try{ const re = await fetch(API+"/espera"); if(re.ok){ cacheE = await re.json(); try{ localStorage.setItem(KEY_E, JSON.stringify(cacheE)); }catch(e){} } }catch(e){} }
+  $("#conn").textContent = online ? "Base de datos conectada" : "Modo local";
+  pintar(); if(!$("#v-mias").hidden) pintarMias();
+}
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const hh = h => pad(h)+":00";
+const fmtFecha = iso => iso.split("-").reverse().join("/");
+const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+
+/* ===== Lógica de disponibilidad ===== */
+const etiqueta = c => (CAP[c]||1) > 1 ? "Sala de silencio" : "Cubículo " + c;
+const extra = r => ((r.personas||1) > 1 || r.exclusiva) ? ` · ${r.personas||1} personas${r.exclusiva?" (uso exclusivo)":""}` : "";
+/* Lugares libres: el mínimo de cada hora del rango. Una reserva con salida registrada ya no ocupa lugares. */
+function lugares(cub, fecha, ini, fin){
+  const cap = CAP[cub]||1, act = db.all().filter(r => r.cub===cub && r.fecha===fecha && r.estado!=="cancelada" && !r.salida);
+  let libre = cap;
+  for(let h=ini; h<fin; h++){
+    const usado = act.filter(r => r.ini<=h && h<r.fin).reduce((t,r) => t + (r.exclusiva ? cap : (r.personas||1)), 0);
+    libre = Math.min(libre, cap - usado);
+  }
+  return libre;
+}
+const ocupado = (cub, fecha, ini, fin) => lugares(cub, fecha, ini, fin) <= 0;
+const state = {cub:null};
+const consulta = () => {
+  const ini = +$("#inicio").value, dur = +$("#dur").value;
+  return {fecha:$("#fecha").value, ini, fin:ini+dur};
+};
+
+/* ===== Interfaz: reservar ===== */
+function llenarHoras(){
+  const sel = $("#inicio"), prev = sel.value, hoy = $("#fecha").value === hoyISO(), ahora = new Date().getHours();
+  sel.innerHTML = "";
+  for(let h=HORA_ABRE; h<HORA_CIERRA; h++){
+    if(hoy && h <= ahora) continue;
+    sel.insertAdjacentHTML("beforeend", `<option value="${h}">${hh(h)} – ${hh(h+1)}</option>`);
+  }
+  if(!sel.options.length && hoy){ const d = new Date(); d.setDate(d.getDate()+1); $("#fecha").value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; return llenarHoras(); }
+  if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+  $("#dur").querySelector('option[value="2"]').disabled = false;
+}
+function pintar(){ pintarGrid(); pintarEspera(); }
+function pintarGrid(){
+  const {fecha, ini, fin} = consulta();
+  const cards = $("#cards"), zA = $("#zA"), zB = $("#zB");
+  zA.querySelectorAll(".room").forEach(n=>n.remove()); zB.querySelectorAll(".room").forEach(n=>n.remove()); $("#zS").innerHTML = "";
+  if(!$("#inicio").options.length){
+    $("#resumen").textContent = "No hay horarios disponibles para esta fecha.";
+    cards.innerHTML = ""; state.cub = null; actualizarSel(); return;
+  }
+  if(fin > HORA_CIERRA){
+    $("#resumen").textContent = `El servicio cierra a las ${hh(HORA_CIERRA)}. Reduce la duración o elige una hora anterior.`;
+    cards.innerHTML = ""; state.cub = null; actualizarSel(); return;
+  }
+  let libres = 0; cards.innerHTML = "";
+  CUBICULOS.forEach(c => {
+    const lug = lugares(c, fecha, ini, fin), cap = CAP[c]||1, busy = lug <= 0; if(!busy) libres++;
+    const sel = state.cub === c;
+    const card = document.createElement("button");
+    card.className = "cub"+(busy?" busy":"")+(sel?" sel":"");
+    card.title = busy ? "Ocupado: toca para anotarte en la lista de espera" : ""; card.setAttribute("aria-pressed", sel);
+    card.innerHTML = `<img class="foto" alt="Foto: ${cap>1?"Sala de silencio":c}"><b>${cap>1?"Sala de silencio":c}</b><span>Planta baja</span><span class="st">${cap>1?(busy?"Llena":sel?"Seleccionada":"Quedan "+lug+" de "+cap+" lugares"):(busy?"Ocupado":sel?"Seleccionado":"Disponible")}</span>`;
+    card.onclick = () => busy ? abrirEspera([c]) : elegir(c); probar(card.querySelector(".foto"), fotosDe(c), c);
+    cards.append(card);
+    const room = document.createElement("button");
+    room.className = "room"+(busy?" busy":"")+(sel?" sel":"");
+    room.textContent = cap>1 ? "Sala de silencio · "+(busy?"llena":lug+" de "+cap+" lugares") : c; room.title = busy ? "Ocupado: toca para anotarte en la lista de espera" : ""; room.onclick = () => busy ? abrirEspera([c]) : elegir(c);
+    (cap>1?$("#zS"):c[0]==="A"?zA:zB).append(room);
+  });
+  if(state.cub && ocupado(state.cub, fecha, ini, fin)) state.cub = null;
+  $("#resumen").textContent = `${libres} de ${CUBICULOS.length} cubículos disponibles para ${fmtFecha(fecha)}, ${hh(ini)} – ${hh(fin)}.`;
+  actualizarSel();
+}
+const fotoCache = {};
+const FOTOS_GEN = ["cubiculo.jpg","cubiculo.jpeg","cubiculo.png","Cubiculo.jpeg","Cubiculo.jpg","Cubiculo.png"];
+const fotosDe = c => ((CAP[c]||1) > 1
+  ? [c+".jpg", c+".jpeg", c+".png", "sala-silencio.jpg", "sala-silencio.jpeg", "sala-silencio.png", "Sala de silencio.jpeg", "Sala de silencio.jpg", "Sala de silencio.png"]
+  : [c+".jpg", c+".jpeg", c+".png"]).concat(FOTOS_GEN);
+/* Prueba cada nombre de la lista; si ninguno existe, quita la imagen. Recuerda el que funcionó. */
+function probar(img, lista, clave){
+  if(!img) return;
+  if(clave in fotoCache){ if(fotoCache[clave] === null){ img.remove(); return; } lista = [fotoCache[clave]]; }
+  let i = 0;
+  const sig = () => { if(i >= lista.length){ fotoCache[clave] = null; img.remove(); return; } img.src = "img/" + encodeURI(lista[i++]); };
+  img.onload = () => { fotoCache[clave] = lista[i-1]; };
+  img.onerror = sig; sig();
+}
+function fotoRespaldo(img){ if(!img.dataset.r){ img.dataset.r = 1; img.src = "img/cubiculo.jpg"; } else img.remove(); }
+/* ===== Sugerencias de nombre y correo (se guardan solo en este navegador) =====
+   Los campos empiezan vacíos; al escribir, el navegador sugiere los datos que ya se usaron aquí. */
+const KEY_P = "infoteca.perfiles.v2";
+const perfil = {
+  todos(){ try{ return JSON.parse(localStorage.getItem(KEY_P)) || []; }catch(e){ return []; } },
+  set(nombre, correo){
+    const l = perfil.todos().filter(x => x.correo !== correo); l.unshift({nombre, correo});
+    try{ localStorage.setItem(KEY_P, JSON.stringify(l.slice(0, 20))); }catch(e){}
+    sugerencias();
+  }
+};
+function sugerencias(){
+  const l = perfil.todos();
+  $("#dlNombres").innerHTML = l.map(x => `<option value="${esc(x.nombre)}"></option>`).join("");
+  $("#dlCorreos").innerHTML = l.map(x => `<option value="${esc(x.correo)}"></option>`).join("");
+}
+function enlazar(idNombre, idCorreo){
+  const n = $(idNombre), c = $(idCorreo);
+  n.addEventListener("input", () => { const p = perfil.todos().find(x => x.nombre === n.value); if(p && !c.value) c.value = p.correo; });
+  c.addEventListener("input", () => { const p = perfil.todos().find(x => x.correo === c.value.trim().toLowerCase()); if(p && !n.value) n.value = p.nombre; });
+}
+const nombreCorto = n => { const p = n.trim().split(/\s+/); return p[0] + (p[1] ? " " + p[1][0].toUpperCase() + "." : ""); };
+const solapa = (a, b) => a.cub===b.cub && a.fecha===b.fecha && a.ini < b.fin && b.ini < a.fin;
+let esperaActiva = null;
+function pintarEspera(){
+  const box = $("#espera"); if(!box) return;
+  const {fecha, ini, fin} = consulta();
+  const todas = dbE.all().filter(e => e.estado==="espera").sort((a,b) => a.creada - b.creada);
+  const delDia = todas.filter(e => e.fecha===fecha);
+  const hayHorario = $("#inicio").options.length && fin <= HORA_CIERRA;
+  const llenos = hayHorario ? CUBICULOS.filter(c => ocupado(c, fecha, ini, fin)) : [];
+  // Todo el día, ordenado por horario; cada fila indica cuándo se registró la persona
+  const reservas = db.all().filter(r => r.fecha===fecha && r.estado!=="cancelada").map(r => ({...r, tipo:"reserva"}));
+  const fila = reservas.concat(delDia.map(e => ({...e, tipo:"espera"}))).sort((a,b) => a.ini - b.ini || a.creada - b.creada);
+  const regEn = ms => new Date(ms).toLocaleString("es-MX", {day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit"});
+  let html = `<div class="esp-head"><span>Lista de espera</span><span class="tag">${fila.length}</span></div>`;
+  if(!fila.length) html += `<p class="hint" style="margin:8px 0">Aún no hay registros para el ${fmtFecha(fecha)}.</p>`;
+  else html += '<ol class="esp-list">' + fila.map(e => {
+    const datos = `${esc(e.cub==="S-01"?"Sala de silencio":e.cub)}${(e.personas||1)>1?" · "+e.personas+" personas":""} · Registrado ${regEn(e.creada)}`;
+    const hora = `<span class="pos">${hh(e.ini)}–${hh(e.fin)}</span>`;
+    if(e.tipo === "reserva"){
+      const [t, cls] = estadoVisible(e);
+      return `<li>${hora}<div class="info"><b>${esc(nombreCorto(e.nombre))}</b><br><span class="hint">${datos}</span></div><span class="tag ${cls}">${t==="Activa"?"Reservado":t}</span></li>`;
+    }
+    const pos = 1 + delDia.filter(o => o.creada < e.creada && solapa(o, e)).length;
+    const listo = pos === 1 && lugares(e.cub, e.fecha, e.ini, e.fin) >= (e.personas||1);
+    return `<li>${hora}<div class="info"><b>${esc(nombreCorto(e.nombre))}</b><br><span class="hint">${datos} · en espera (turno ${pos})</span></div>`
+      + (listo ? `<button class="btn" data-r="${esc(e.codigo)}">¡Hay lugar! Reservar</button>` : "")
+      + `<button class="btn alt" data-x="${esc(e.codigo)}">Salir</button></li>`;
+  }).join("") + "</ol>";
+  html += `<button class="btn alt" id="btnEsperar" ${llenos.length?"":"disabled"}>Unirme a la lista de espera</button>`;
+  html += `<p class="hint" style="margin:6px 0 0">${llenos.length ? "Hay espacios llenos en el horario que consultas." : "La opción aparece cuando un espacio está lleno en el horario elegido."}</p>`;
+  box.innerHTML = html;
+  box.onclick = ev => {
+    const b = ev.target.closest("button"); if(!b) return;
+    if(b.id === "btnEsperar") return abrirEspera(llenos);
+    const l = dbE.all();
+    if(b.dataset.x){
+      const e = l.find(y => y.codigo === b.dataset.x), c = prompt("Escribe tu correo institucional para salir de la lista:");
+      if(e && c && c.trim().toLowerCase() === e.correo){ e.estado = "cancelada"; dbE.save(l); pintarEspera(); } else if(c) alert("Ese correo no coincide con el de la lista.");
+    }
+    if(b.dataset.r){
+      const e = l.find(y => y.codigo === b.dataset.r); if(!e) return;
+      esperaActiva = e.codigo; $("#fecha").value = e.fecha; llenarHoras(); $("#inicio").value = e.ini; $("#dur").value = e.fin - e.ini;
+      state.cub = e.cub; pintar(); abrirForm(); $("#nombre").value = e.nombre; $("#correo").value = e.correo; if((CAP[e.cub]||1) > 1) $("#personas").value = Math.min(e.personas||1, +$("#personas").max || 1);
+    }
+  };
+}
+function abrirEspera(llenos){
+  const {fecha, ini, fin} = consulta(), sel = $("#espCub");
+  sel.innerHTML = llenos.map(c => `<option value="${c}">${esc(etiqueta(c))}</option>`).join("");
+  $("#esperaRes").textContent = `${fmtFecha(fecha)} · ${hh(ini)} – ${hh(fin)}`; $("#espErr").textContent = "";
+  $("#espNombre").value = ""; $("#espCorreo").value = "";
+  const tp = () => { $("#espPersWrap").hidden = (CAP[sel.value]||1) <= 1; $("#espPers").max = CAP[sel.value]||1; };
+  sel.onchange = tp; tp(); $("#dlgEspera").showModal(); $("#espNombre").focus();
+}
+$("#espNo").onclick = () => $("#dlgEspera").close();
+$("#espOk").onclick = () => {
+  const {fecha, ini, fin} = consulta(), cub = $("#espCub").value, nombre = $("#espNombre").value.trim(), correo = $("#espCorreo").value.trim().toLowerCase(), err = $("#espErr");
+  if(nombre.length < 5) return err.textContent = "Escribe tu nombre completo.";
+  const m = correo.match(/^[^\s@]+@([^\s@]+)$/); if(!m || !DOMINIOS.includes(m[1])) return err.textContent = `Usa tu correo institucional (@${DOMINIOS[0]}).`;
+  const cap = CAP[cub]||1, personas = cap > 1 ? parseInt($("#espPers").value, 10) : 1;
+  if(!(personas >= 1 && personas <= cap)) return err.textContent = `Indica cuántas personas serán (de 1 a ${cap}).`;
+  if(lugares(cub, fecha, ini, fin) >= personas) return err.textContent = "Ya hay lugar en ese horario: reserva directamente.";
+  const e = {codigo:"E-"+Array.from(crypto.getRandomValues(new Uint8Array(6)), x => "ABCDEFGHJKMNPQRSTUVWXYZ23456789"[x%31]).join(""), cub, fecha, ini, fin, nombre, correo, personas, estado:"espera", creada:Date.now()};
+  const l = dbE.all();
+  if(l.some(x => x.estado==="espera" && x.correo===correo && solapa(x, e))) return err.textContent = "Ya estás en la lista de espera para ese espacio y horario.";
+  l.push(e); dbE.save(l); perfil.set(nombre, correo); $("#dlgEspera").close(); pintarEspera();
+};
+function elegir(c){ state.cub = state.cub===c ? null : c; pintar(); }
+function actualizarSel(){
+  const {fecha, ini, fin} = consulta();
+  $("#btnReservar").disabled = !state.cub;
+  $("#selTxt").textContent = state.cub ? `${etiqueta(state.cub)} · ${hh(ini)} – ${hh(fin)}` : "Elige un cubículo disponible.";
+}
+
+/* ===== Registro de reservación ===== */
+function codigoUnico(){
+  const alf = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // sin caracteres ambiguos (0/O, 1/I/L)
+  const existentes = new Set(db.all().map(r=>r.codigo));
+  let c;
+  do{
+    const b = crypto.getRandomValues(new Uint8Array(8));
+    c = [...b].map(x=>alf[x%alf.length]).join(""); c = c.slice(0,4)+"-"+c.slice(4);
+  }while(existentes.has(c));
+  return c;
+}
+function payload(r){ return r.codigo; }   // QR corto = módulos grandes = lectura rápida; el personal consulta el resto en la base de datos
+
+function abrirForm(){
+  const {fecha, ini, fin} = consulta();
+  $("#formResumen").textContent = `${etiqueta(state.cub)} · ${fmtFecha(fecha)} · ${hh(ini)} – ${hh(fin)}`;
+  $("#formErr").textContent = "";
+  $("#nombre").value = ""; $("#correo").value = "";
+  const cap = CAP[state.cub]||1, sala = cap > 1; $("#campoSala").hidden = !sala;
+  if(sala){ const lib = lugares(state.cub, fecha, ini, fin); $("#personas").max = lib; $("#personas").value = 1; $("#exclusiva").checked = false; $("#libresTxt").textContent = `Lugares disponibles en ese horario: ${lib} de ${cap}.`; }
+  $("#dlgForm").showModal(); $("#nombre").focus();
+}
+function confirmar(){
+  const nombre = $("#nombre").value.trim(), correo = $("#correo").value.trim().toLowerCase();
+  const {fecha, ini, fin} = consulta(), err = $("#formErr");
+  if(nombre.length < 5) return err.textContent = "Escribe tu nombre completo.";
+  const m = correo.match(/^[^\s@]+@([^\s@]+)$/);
+  if(!m || !DOMINIOS.includes(m[1])) return err.textContent = `Usa tu correo institucional (@${DOMINIOS[0]}).`;
+  const cap = CAP[state.cub]||1, lib = lugares(state.cub, fecha, ini, fin);
+  let personas = 1, exclusiva = false;
+  if(cap > 1){
+    personas = parseInt($("#personas").value, 10); exclusiva = $("#exclusiva").checked;
+    if(!(personas >= 1 && personas <= cap)) return err.textContent = `Indica cuántas personas serán (de 1 a ${cap}).`;
+    if(exclusiva && lib < cap) return err.textContent = "Ya hay personas en ese horario; no se puede reservar uso exclusivo.";
+    if(!exclusiva && personas > lib) return err.textContent = `Solo quedan ${lib} lugares en ese horario.`;
+  }
+  if(lib <= 0){ // revalidación antes de registrar
+    $("#dlgForm").close(); state.cub = null; pintar();
+    return alert("Ese cubículo acaba de ser reservado. Elige otro, por favor.");
+  }
+  const r = {codigo:codigoUnico(), cub:state.cub, fecha, ini, fin, nombre, correo, personas, exclusiva, estado:"activa", creada:Date.now(), entrada:null, salida:null};
+  const list = db.all(); list.push(r); db.save(list);
+  perfil.set(nombre, correo);
+  if(esperaActiva){ const le = dbE.all(), x = le.find(y => y.codigo === esperaActiva); if(x){ x.estado = "atendida"; dbE.save(le); } esperaActiva = null; }
+  $("#dlgForm").close(); $("#formRes").reset(); state.cub = null; pintar(); mostrarQR(r);
+}
+function mostrarQR(r){
+  $("#qrInfo").textContent = `${etiqueta(r.cub)} · ${fmtFecha(r.fecha)} · ${hh(r.ini)} – ${hh(r.fin)}`+(r.confirmada?" · Asistencia confirmada":"");
+  $("#qrCode").textContent = r.codigo;
+  const box = $("#qrcode"); box.innerHTML = "";
+  new QRCode(box, {text:payload(r), width:280, height:280, correctLevel:QRCode.CorrectLevel.M});
+  $("#btnDl").onclick = () => {
+    const cv = box.querySelector("canvas"), a = document.createElement("a");
+    a.href = cv.toDataURL("image/png"); a.download = `QR-${r.cub}-${r.codigo}.png`; a.click();
+  };
+  $("#dlgQr").showModal();
+}
+
+/* ===== Mis reservas ===== */
+function estadoVisible(r){
+  if(r.estado==="cancelada") return ["Cancelada","x"];
+  if(r.salida) return ["Finalizada","u"];
+  if(r.entrada) return ["En uso","u"];
+  const fin = new Date(`${r.fecha}T${pad(r.fin)}:00:00`);
+  return fin < new Date() ? ["Vencida","x"] : ["Activa",""];
+}
+const fh = ms => new Date(ms).toLocaleString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+function pintarHist(){
+  const box = $("#historial"), list = db.all().sort((a,b)=>b.creada-a.creada);
+  if(!list.length){ box.innerHTML = '<div class="empty">Todavía no hay movimientos. Tu historial aparecerá aquí.</div>'; return; }
+  const filas = list.map(r => {
+    const [est, cls] = estadoVisible(r), mov = [];
+    if(r.confirmada) mov.push("Confirmó asistencia: "+fh(r.confirmada));
+    if(r.entrada) mov.push("Entrada: "+fh(r.entrada));
+    if(r.salida) mov.push("Salida: "+fh(r.salida));
+    if(r.canceladaEn) mov.push("Cancelada: "+fh(r.canceladaEn));
+    return `<tr><td>${fh(r.creada)}</td><td><b>${esc(r.cub)}</b>${esc(extra(r))}</td><td>${fmtFecha(r.fecha)}<br>${hh(r.ini)} – ${hh(r.fin)}</td><td><span class="tag ${cls}">${est}</span></td><td class="code">${esc(r.codigo)}</td><td>${mov.map(esc).join("<br>")||"—"}</td></tr>`;
+  }).join("");
+  box.innerHTML = `<h3 style="margin:0 0 10px;font:600 18px var(--serif)">Historial de reservaciones</h3><table><thead><tr><th>Registrada</th><th>Cubículo</th><th>Reservada para</th><th>Estado</th><th>Código</th><th>Movimientos</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+function pintarMias(){
+  if(!$("#historial").hidden) pintarHist();
+  const list = db.all().sort((a,b)=>b.creada-a.creada), box = $("#listaMias");
+  if(!list.length){ box.innerHTML = `<div class="panel empty">Aún no tienes reservas. Ve a <b>Reservar</b> para elegir un cubículo.</div>`; return; }
+  box.innerHTML = "";
+  list.forEach(r => {
+    const [txt, cls] = estadoVisible(r), div = document.createElement("div");
+    div.className = "panel res";
+    div.innerHTML = `<div class="info"><b>${esc(etiqueta(r.cub))}</b>${esc(extra(r))} <span class="tag ${cls}">${txt}</span><br>
+      ${fmtFecha(r.fecha)} · ${hh(r.ini)} – ${hh(r.fin)}<br><span class="code">${esc(r.codigo)}</span></div>`;
+    if(r.estado!=="cancelada" && !r.entrada){
+      const q = document.createElement("button"); q.className="btn"; q.textContent="Ver QR"; q.onclick=()=>mostrarQR(r);
+      const c = document.createElement("button"); c.className="btn danger"; c.textContent="Cancelar";
+      c.onclick = () => { if(confirm("¿Cancelar la reserva de " + etiqueta(r.cub) + "?")){ const l = db.all(); const x=l.find(y=>y.codigo===r.codigo); x.estado="cancelada"; x.canceladaEn=Date.now(); db.save(l); pintarMias(); pintar(); } };
+      const s = document.createElement("button"); s.className="btn alt"; s.textContent="Simular recordatorio"; s.onclick=()=>aviso(r.codigo,true);
+      div.append(q, s, c);
+    }
+    box.append(div);
+  });
+}
+
+/* ===== Panel del personal ===== */
+function extraerCodigo(txt){
+  txt = txt.trim();
+  try{ const o = JSON.parse(txt); if(o && o.c) return {codigo:o.c, datos:o}; }catch(e){}
+  return {codigo:txt.toUpperCase(), datos:null};
+}
+function asistencia(r){
+  $("#asNombre").textContent = r.nombre;
+  $("#asDetalle").textContent = `${etiqueta(r.cub)} · ${fmtFecha(r.fecha)} · ${hh(r.ini)} – ${hh(r.fin)}`;
+  $("#asHora").textContent = new Date(r.entrada).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  $("#dlgAsist").showModal();
+}
+$("#btnAsOk").onclick = () => $("#dlgAsist").close();
+function validar(txt){
+  const {codigo, datos} = extraerCodigo(txt), out = $("#out");
+  if(!codigo){ out.innerHTML = ""; return; }
+  const r = db.all().find(x => x.codigo === codigo);
+  const fila = (k,v) => `<dt>${k}</dt><dd>${esc(v)}</dd>`;
+  if(!r){
+    out.innerHTML = `<div class="result ${datos?"good":"bad"}"><b>${datos?"QR con formato válido":"Código no encontrado"}</b>
+      <p class="hint" style="margin:4px 0 0">${datos
+        ? "Esta reserva no está en el registro de este navegador (no hay base de datos compartida). Los datos vienen del propio QR:"
+        : "Revisa el código o pide al alumno que lo muestre de nuevo."}</p>
+      ${datos?`<dl>${fila("Código",datos.c)}${fila("Cubículo",datos.cub)}${fila("Fecha",fmtFecha(datos.f))}${fila("Horario",datos.h)}${fila("Alumno",datos.n)}${fila("Correo",datos.m)}</dl>`:""}</div>`;
+    return;
+  }
+  const [txtE] = estadoVisible(r), valida = r.estado==="activa" && !r.salida && txtE!=="Vencida";
+  out.innerHTML = `<div class="result ${valida?"good":"bad"}"><b>${valida?"Reserva válida":"Reserva no vigente: "+txtE}</b>
+    <dl>${fila("Código",r.codigo)}${fila("Espacio",etiqueta(r.cub))}${fila("Personas",(r.personas||1)+(r.exclusiva?" (uso exclusivo)":""))}${fila("Fecha",fmtFecha(r.fecha))}${fila("Horario",`${hh(r.ini)} – ${hh(r.fin)}`)}${fila("Alumno",r.nombre)}${fila("Correo",r.correo)}
+    ${fila("Asistencia", r.confirmada?"Confirmada por el alumno":"Sin confirmar")}${fila("Entrada", r.entrada?new Date(r.entrada).toLocaleTimeString("es-MX"):"—")}${fila("Salida", r.salida?new Date(r.salida).toLocaleTimeString("es-MX"):"—")}</dl>
+    <div class="row" style="margin-top:12px"></div></div>`;
+  const row = out.querySelector(".row");
+  const marcar = campo => { const l = db.all(), x = l.find(y=>y.codigo===r.codigo); x[campo] = Date.now(); db.save(l); validar(r.codigo); if(campo==="entrada") asistencia(x); };
+  if(valida && !r.entrada){ const b = document.createElement("button"); b.className="btn"; b.textContent="Confirmar asistencia"; b.onclick=()=>marcar("entrada"); row.append(b); }
+  if(valida && r.entrada){ const b = document.createElement("button"); b.className="btn"; b.textContent="Registrar salida"; b.onclick=()=>marcar("salida"); row.append(b); }
+}
+let stream = null, scanning = false;
+async function camara(){
+  const v = $("#cam");
+  if(scanning){ detener(); return; }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ alert("La cámara requiere abrir la página en http://localhost:3000"); return; }
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720}}});
+    v.srcObject = stream; $("#scan").hidden = false; await v.play(); scanning = true;
+    $("#btnCam").textContent = "Detener cámara"; $("#scanMsg").textContent = "Acerca el QR al recuadro y mantenlo quieto.";
+    const det = ("BarcodeDetector" in window) ? new BarcodeDetector({formats:["qr_code"]}) : null;
+    const cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently:true});
+    let pasada = 0;
+    const intentar = (sx, sy, sw, sh, t) => {
+      const k = t / Math.max(sw, sh); cv.width = Math.round(sw*k); cv.height = Math.round(sh*k);
+      cx.drawImage(v, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+      const q = jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height, {inversionAttempts:"attemptBoth"});
+      return q && q.data ? q.data : null;
+    };
+    const leer = async () => {
+      if(det){ try{ const r = await det.detect(v); if(r.length) return r[0].rawValue; }catch(e){} }
+      if(!window.jsQR){ $("#scanMsg").textContent = "No se cargó el lector (falta libs/jsQR.js)."; return null; }
+      if(!v.videoWidth) return null;
+      const W = v.videoWidth, H = v.videoHeight, m = Math.min(W, H);
+      pasada++;
+      // alterna: cuadro completo, centro amplio, centro cercano
+      switch(pasada % 3){
+        case 0: return intentar(0, 0, W, H, 640);
+        case 1: return intentar((W-m*0.9)/2, (H-m*0.9)/2, m*0.9, m*0.9, 600);
+        default: return intentar((W-m*0.6)/2, (H-m*0.6)/2, m*0.6, m*0.6, 480);
+      }
+    };
+    const loop = async () => {
+      if(!scanning) return;
+      const txt = await leer();
+      if(txt){ pitido(); $("#codeIn").value = txt; detener(); validar(txt); return; }
+      setTimeout(() => requestAnimationFrame(loop), 100);
+    };
+    loop();
+  }catch(e){ alert("No se pudo acceder a la cámara. Permite el acceso en el ícono de la barra de direcciones y vuelve a intentarlo."); }
+}
+function detener(){
+  scanning = false; if(stream) stream.getTracks().forEach(t=>t.stop());
+  $("#scan").hidden = true; $("#scanMsg").textContent = ""; $("#btnCam").textContent = "Escanear con cámara";
+}
+function pitido(){ try{ const a = new (window.AudioContext||window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; g.gain.value = .15; o.connect(g); g.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, 140); if(navigator.vibrate) navigator.vibrate(80); }catch(e){} }
+/* Leer el QR desde una foto o captura de pantalla */
+$("#btnFoto").onclick = () => $("#fileQr").click();
+$("#fileQr").onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  let txt = null;
+  try{
+    const bmp = await createImageBitmap(f), cv = document.createElement("canvas"), cx = cv.getContext("2d", {willReadFrequently:true});
+    for(const t of [1600, 1000, 700, 450]){
+      const fac = Math.min(1, t / Math.max(bmp.width, bmp.height));
+      cv.width = Math.round(bmp.width*fac); cv.height = Math.round(bmp.height*fac); cx.drawImage(bmp, 0, 0, cv.width, cv.height);
+      if("BarcodeDetector" in window){ try{ const r = await new BarcodeDetector({formats:["qr_code"]}).detect(cv); if(r.length){ txt = r[0].rawValue; break; } }catch(err){} }
+      if(window.jsQR){ const q = jsQR(cx.getImageData(0, 0, cv.width, cv.height).data, cv.width, cv.height, {inversionAttempts:"attemptBoth"}); if(q && q.data){ txt = q.data; break; } }
+    }
+  }catch(err){}
+  e.target.value = "";
+  if(txt){ $("#codeIn").value = txt; validar(txt); }
+  else alert("No se pudo leer el QR en esa imagen. Usa un QR de una reserva nueva, con buena luz y sin reflejos; también puedes escribir el código.");
+};
+
+/* ===== Recordatorio tipo WhatsApp (10 minutos antes) ===== */
+const MIN_AVISO = 10, mostrados = new Set();
+function aviso(codigo, forzar){
+  const r = db.all().find(x => x.codigo === codigo);
+  if(!r || (mostrados.has(codigo) && !forzar)) return;
+  mostrados.add(codigo);
+  const t = document.createElement("div"); t.className = "wa";
+  const hora = new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+  t.innerHTML = `<div class="who">Infoteca UAdeC</div>Hola ${esc(r.nombre.split(" ")[0])}, tu reservación de <b>${esc(etiqueta(r.cub))}</b> es a las <b>${hh(r.ini)}</b>. ¿Confirmas tu asistencia?<div class="time">${hora}</div><div class="row"></div>`;
+  const si = document.createElement("button"); si.className = "btn"; si.textContent = "Sí, confirmo";
+  const no = document.createElement("button"); no.className = "btn alt"; no.textContent = "No podré asistir";
+  si.onclick = () => { const l = db.all(); const x = l.find(y=>y.codigo===codigo); x.confirmada = Date.now(); db.save(l); t.remove(); mostrarQR(x); pintarMias(); };
+  no.onclick = () => { const l = db.all(); const x = l.find(y=>y.codigo===codigo); x.estado = "cancelada"; x.canceladaEn = Date.now(); db.save(l); t.remove(); pintar(); pintarMias(); };
+  t.querySelector(".row").append(si, no); $("#toasts").append(t);
+  try{ if("Notification" in window && Notification.permission==="granted") new Notification("Infoteca UAdeC",{body:`${etiqueta(r.cub)} a las ${hh(r.ini)}. ¿Confirmas tu asistencia?`}); }catch(e){}
+}
+function revisarAvisos(){
+  const ahora = Date.now();
+  db.all().forEach(r => {
+    if(r.estado!=="activa" || r.confirmada || r.entrada) return;
+    const falta = new Date(`${r.fecha}T${pad(r.ini)}:00:00`) - ahora;
+    if(falta <= MIN_AVISO*60000 && falta > 0) aviso(r.codigo);
+  });
+}
+setInterval(revisarAvisos, 15000);
+
+$("#btnHist").onclick = () => { const h = $("#historial"); h.hidden = !h.hidden; $("#btnHist").textContent = h.hidden ? "Historial" : "Ocultar historial"; if(!h.hidden) pintarHist(); };
+$("#btnBorrar").onclick = () => { if(confirm("¿Borrar todas las reservas guardadas?")){ db.save([]); dbE.save([]); mostrados.clear(); state.cub=null; pintar(); pintarMias(); } };
+
+/* ===== Navegación y arranque ===== */
+function vista(v){
+  ["reservar","mias","personal"].forEach(n => $("#v-"+n).hidden = n!==v);
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-current", b.dataset.v===v));
+  if(v==="mias") pintarMias(); if(v!=="personal") detener();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => vista(b.dataset.v));
+const f = $("#fecha"); f.value = f.min = hoyISO();
+const max = new Date(); max.setDate(max.getDate()+14); f.max = `${max.getFullYear()}-${pad(max.getMonth()+1)}-${pad(max.getDate())}`;
+f.onchange = () => { llenarHoras(); pintar(); };
+$("#inicio").onchange = pintar; $("#dur").onchange = pintar;
+$("#btnReservar").onclick = abrirForm;
+$("#formRes").onsubmit = ev => { ev.preventDefault(); confirmar(); }; $("#btnNo").onclick = () => { esperaActiva = null; $("#dlgForm").close(); };
+$("#btnCerrar").onclick = () => $("#dlgQr").close();
+$("#btnPin").onclick = () => {
+  if($("#pin").value === PIN_PERSONAL){ $("#gate").hidden = true; $("#staff").hidden = false; $("#pin").value = ""; $("#pinErr").textContent = ""; camara(); }
+  else $("#pinErr").textContent = "PIN incorrecto.";
+};
+$("#pin").onkeydown = e => { if(e.key==="Enter") $("#btnPin").click(); };
+$("#btnLogout").onclick = () => { detener(); $("#staff").hidden = true; $("#gate").hidden = false; $("#out").innerHTML = ""; $("#codeIn").value = ""; };
+$("#btnVal").onclick = () => validar($("#codeIn").value);
+$("#codeIn").onkeydown = e => { if(e.key==="Enter") validar($("#codeIn").value); };
+$("#btnCam").onclick = camara;
+probar($("#logoImg"), ["logo.png","LogoUadec.png","logo.jpg","logo.jpeg","logo.svg"], "logo");
+sugerencias(); enlazar("#nombre", "#correo"); enlazar("#espNombre", "#espCorreo");
+llenarHoras(); pintar(); revisarAvisos(); sync(); setInterval(sync, 10000);
+try{ if("Notification" in window && Notification.permission==="default") Notification.requestPermission(); }catch(e){}
+</script>
+</body>
+</html>

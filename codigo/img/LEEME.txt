@@ -1,0 +1,4 @@
+Coloca aqui:
+- logo.png          (logo de la UAdeC o de la Infoteca)
+- cubiculo.jpg     (foto generica, se usa en todos los cubiculos)
+- A-01.jpg ... B-05.jpg  (opcional: una foto por cubiculo; si falta, se usa cubiculo.jpg)
